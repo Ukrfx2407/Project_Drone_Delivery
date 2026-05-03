@@ -15,7 +15,10 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.geometry("1000x1000")
         self.attributes("-topmost", True)
 
-        # --- ZONA 1: CONFIGURAZIONE E DATI ---
+        # CONFIGURAZIONE E DATI 
+        
+        self.livello_batteria = 1.0  # Partiamo dal 100% (1.0)
+        self.consumo_per_mossa = 0.05 # Ogni mossa consuma il 5% (0.05)
         self.lato_cella = 160
         self.step_corrente = 0
         self.piano_pddl = []
@@ -33,22 +36,40 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.canvas = tk.Canvas(self, width=800, height=800, bg="white", highlightthickness=0)
         self.canvas.pack(pady=20)
         
-        self.disegna_griglia()
-        
-        # Carichiamo il drone (assicurati che il file si chiami drone.png)
-        img_pil = Image.open("drone.png").resize((100, 100))
-        self.img_tk = ImageTk.PhotoImage(img_pil)
-
         img_pil = Image.open("house.png").resize((100, 100))
         self.img_tk_house = ImageTk.PhotoImage(img_pil)
         
+        img_pil = Image.open("restaurant.png").resize((100, 100))
+        self.img_tk_restaurant = ImageTk.PhotoImage(img_pil)
         self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
+        self.id_restaurant = self.canvas.create_image(80, 80, image=self.img_tk_restaurant, tags="restaurant")
+
+        self.disegna_griglia()
+        
+        if numero_istanza == 1 : 
+             img_pil = Image.open("house.png").resize((100, 100))
+             self.img_tk_house = ImageTk.PhotoImage(img_pil)
+             self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
+        if numero_istanza == 2 or numero_istanza == 3 :
+            self.id_house = self.canvas.create_image(80, 720, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(720, 80, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
+        
+        # Carichiamo il drone (assicurati che il file si chiami drone.png)
+        img_pil = Image.open("drone.png").resize((100, 100))
+        self.img_tk = ImageTk.PhotoImage(img_pil)        
+        
         self.id_drone = self.canvas.create_image(80, 80, image=self.img_tk, tags="drone")
         
 
         # Bottone per avviare tutto
-        self.btn_start = ctk.CTkButton(self, text="Avvia Missione PDDL", command=self.avvia_missione)
+        self.btn_start = ctk.CTkButton(self, text="Avvia Missione PDDL", command=lambda: self.avvia_missione(numero_istanza), width=200, height=40, font=("Segoe UI Variable", 16))
         self.btn_start.pack(pady=10)
+
+        # Barra di stato per la batteria
+        self.barra_batteria = ctk.CTkProgressBar(self, width=400, height=40, progress_color="#2ecc71") # Colore verde
+        self.barra_batteria.pack(pady=10)
+        self.barra_batteria.set(self.livello_batteria)
 
    
     # --- METODI GRAFICI ---
@@ -81,11 +102,11 @@ class FinestraSimulazione(ctk.CTkToplevel):
  
 
     # --- ZONA 3: IL CERVELLO PDDL (LETTURA DA FILE TXT) ---
-    def avvia_missione(self):
+    def avvia_missione(self, numero_istanza):
         """Legge il piano dal file di testo e avvia il drone"""
         self.btn_start.configure(state="disabled") 
         
-        with open("piano_istanza1.txt", "r") as file:
+        with open(f"piano_istanza{numero_istanza}.txt", "r") as file:
             testo_planner = file.read()
         
         self.piano_pddl = self.estrai_piano_universale(testo_planner)
@@ -112,14 +133,38 @@ class FinestraSimulazione(ctk.CTkToplevel):
             azione = self.piano_pddl[self.step_corrente]
             
             if azione[0] == "move":
+                # --- SCARICA LA BATTERIA ---
+                self.livello_batteria -= self.consumo_per_mossa
+                self.barra_batteria.set(self.livello_batteria)
+                
+                # Se la batteria scende sotto il 30%, diventa rossa (emergenza)
+                if self.livello_batteria < 0.3:
+                    self.barra_batteria.configure(progress_color="#e74c3c")
+                
+                # --- MOVIMENTO ---
                 dest = azione[3] 
                 target_x, target_y = self.coordinate_celle[dest]
                 self.muovi_verso(target_x, target_y)
-            else:
+            elif azione[0] == "recharge":
+                print("⚡ Ricarica in corso...")
+                
+                # --- RIPRISTINA LA BATTERIA ---
+                self.livello_batteria = 1.0
+                self.barra_batteria.set(self.livello_batteria)
+                self.barra_batteria.configure(progress_color="#2ecc71") # Torna verde
+                
+                # IMPORTANTISSIMO: Passiamo alla mossa successiva!
                 self.step_corrente += 1
-                self.after(500, self.esegui_prossima_mossa) # Pausa di mezzo secondo
+                
+                # Pausa lunga (1.5 secondi) per simulare il tempo di ricarica e poi riparte
+                self.after(1500, self.esegui_prossima_mossa)
+                
+            else:
+                # Per load e delivery passa al comando successivo
+                self.step_corrente += 1
+                self.after(500, self.esegui_prossima_mossa)
         else:
-            self.fine = ctk.CTkLabel(self, text="Finito", font=("Segoe UI Variable", 24, "bold"))
+            self.fine = ctk.CTkLabel(self, text="Ordine è stato consegnato", font=("Segoe UI Variable", 24, "bold"))
             self.fine.pack(pady=20)
 
 # =========================================================
