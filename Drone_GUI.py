@@ -41,10 +41,10 @@ class FinestraSimulazione(ctk.CTkToplevel):
 
         img_pil = Image.open("house.png").resize((100, 100))
         self.img_tk_house = ImageTk.PhotoImage(img_pil)
-        # Lo posizioniamo inizialmente in p00 (centro 80, 80)
-        self.id_drone = self.canvas.create_image(80, 80, image=self.img_tk, tags="drone")
+        
         self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
-
+        self.id_drone = self.canvas.create_image(80, 80, image=self.img_tk, tags="drone")
+        
 
         # Bottone per avviare tutto
         self.btn_start = ctk.CTkButton(self, text="Avvia Missione PDDL", command=self.avvia_missione)
