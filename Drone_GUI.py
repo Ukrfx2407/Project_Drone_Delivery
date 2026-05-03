@@ -11,144 +11,116 @@ from PIL import Image, ImageTk
 class FinestraSimulazione(ctk.CTkToplevel):
     def __init__(self, master, numero_istanza):
         super().__init__(master)
-        
-        # Usiamo il numero_istanza per personalizzare il titolo
         self.title(f"Simulazione Istanza {numero_istanza}")
         self.geometry("1000x1000")
-        
-        # Questa riga forza la nuova finestra a stare "sopra" il menu principale
-        self.attributes("-topmost", True) 
+        self.attributes("-topmost", True)
 
-        self.dizionario_celle = {}
-
-        # Il titolo in alto nella nuova finestra
-        self.titolo = ctk.CTkLabel(self, text=f"Esecuzione Piano PDDL: Istanza {numero_istanza}", font=("Segoe UI Variable", 20, "bold"))
-        self.titolo.pack(pady=20)
-
+        # --- ZONA 1: CONFIGURAZIONE E DATI ---
         self.lato_cella = 160
+        self.step_corrente = 0
+        self.piano_pddl = []
+        
+        # Il tuo Dizionario GPS (Coordinate centrali delle celle)
+        self.coordinate_celle = {
+            "p00": (80, 80),   "p01": (240, 80),  "p02": (400, 80),  "p03": (560, 80),  "p04": (720, 80),
+            "p10": (80, 240),  "p11": (240, 240), "p12": (400, 240), "p13": (560, 240), "p14": (720, 240),
+            "p20": (80, 400),  "p21": (240, 400), "p22": (400, 400), "p23": (560, 400), "p24": (720, 400),
+            "p30": (80, 560),  "p31": (240, 560), "p32": (400, 560), "p33": (560, 560), "p34": (720, 560),
+            "p40": (80, 720),  "p41": (240, 720), "p42": (400, 720), "p43": (560, 720), "p44": (720, 720)
+        }
+
+        # --- ZONA 2: PREPARAZIONE GRAFICA ---
         self.canvas = tk.Canvas(self, width=800, height=800, bg="white", highlightthickness=0)
-        self.canvas.pack(expand = True)
-
+        self.canvas.pack(pady=20)
+        
         self.disegna_griglia()
-
-        immagine_pil = Image.open("drone.png").resize((100, 100))
-        self.immagine_tk = ImageTk.PhotoImage(immagine_pil)
         
-        centro = self.lato_cella / 2  
-        
+        # Carichiamo il drone (assicurati che il file si chiami drone.png)
+        img_pil = Image.open("drone.png").resize((100, 100))
+        self.img_tk = ImageTk.PhotoImage(img_pil)
 
-        
-        immagine_pil = Image.open("drone.png").resize((100, 100))
-        self.immagine_tk = ImageTk.PhotoImage(immagine_pil)
-        self.id_drone = self.canvas.create_image(centro, centro, image=self.immagine_tk, tags="drone")
-        self.after(1000, lambda: self.muovi_verso(720, 400))
-      
-    
+        img_pil = Image.open("house.png").resize((100, 100))
+        self.img_tk_house = ImageTk.PhotoImage(img_pil)
+        # Lo posizioniamo inizialmente in p00 (centro 80, 80)
+        self.id_drone = self.canvas.create_image(80, 80, image=self.img_tk, tags="drone")
+        self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
 
+
+        # Bottone per avviare tutto
+        self.btn_start = ctk.CTkButton(self, text="Avvia Missione PDDL", command=self.avvia_missione)
+        self.btn_start.pack(pady=10)
+
+   
+    # --- METODI GRAFICI ---
     def disegna_griglia(self):
-         for i in range(1, 5):
-            pos = i * self.lato_cella 
-            
-            # Linee verticali
+        for i in range(1, 5):
+            pos = i * self.lato_cella
             self.canvas.create_line(pos, 0, pos, 800, fill="gray", dash=(4, 4))
-            # Linee orizzontali
             self.canvas.create_line(0, pos, 800, pos, fill="gray", dash=(4, 4))
 
-    def lancia_enhsp(self, file_dominio, file_problema):
-        """
-        Lancia il file .jar di ENHSP in background, cattura il risultato 
-        e lo passa al nostro estrattore universale.
-        """
-        # Assicurati che il nome del file .jar sia esattamente quello che ti ha dato il prof!
-        nome_jar = "enhsp-20.jar" 
-        
-        # Costruiamo il comando come se lo stessimo scrivendo nel terminale
-        comando = [
-            "java", 
-            "-jar", nome_jar, 
-            "-o", file_dominio, 
-            "-f", file_problema
-        ]
-        
-        print(f"Lancio il planner per {file_problema}... attendere prego ⏳")
-        
-        try:
-            # shell=True serve a volte su Windows per far trovare 'java'
-            # capture_output=True è la magia che salva il testo invece di stamparlo
-            processo = subprocess.run(comando, capture_output=True, text=True, shell=True)
-            
-            # Tutto il testo che ENHSP ha prodotto!
-            testo_grezzo = processo.stdout
-            
-            # Se c'è stato un errore nel PDDL (es. errore di sintassi)
-            if "Failed" in testo_grezzo or processo.returncode != 0:
-                print("⚠️ Errore nel PDDL! Ecco cosa dice ENHSP:")
-                print(processo.stderr or testo_grezzo)
-                return []
-                
-            # Se ha successo, diamo in pasto il testo grezzo alla funzione di prima!
-            piano_pulito = self.estrai_piano_universale(testo_grezzo)
-            
-            print("✅ Piano trovato e decodificato con successo!")
-            return piano_pulito
-            
-        except FileNotFoundError:
-            print("❌ ERRORE: Python non trova Java o il file enhsp.jar!")
-            return []
 
-    def leggi_pddl(self):
-        print("Qui scriveremo la logica per far muovere il drone!")
-   
-    def muovi_verso(self, target_x, target_y):
-        """Muove il drone dal punto in cui si trova verso target_x e target_y"""
-        
-        # 1. Chiediamo al canvas dove si trova il drone IN QUESTO MOMENTO
-        # coords restituisce una lista [x, y] del centro dell'immagine
-        coordinate_attuali = self.canvas.coords("drone")
-        
-        # Controllo di sicurezza (se il drone non c'è, fermati)
-        if not coordinate_attuali:
-            return 
-            
-        current_x = coordinate_attuali[0]
-        current_y = coordinate_attuali[1]
-        
-        # 2. Prepariamo i calcoli per il passo
-        passo = 5 # Quanti pixel si muove per ogni frame (velocità)
-        dx = 0    # Spostamento orizzontale
-        dy = 0    # Spostamento verticale
-        
-        # --- CALCOLO ASSE X ---
-        distanza_x = target_x - current_x
-        if abs(distanza_x) > 0: # Se non siamo ancora arrivati sulla X
-            if abs(distanza_x) <= passo:
-                dx = distanza_x # Ultimo passo esatto per non "sorpassare"
-            elif distanza_x > 0:
-                dx = passo      # Vai a destra
-            else:
-                dx = -passo     # Vai a sinistra
-                
-        # --- CALCOLO ASSE Y ---
-        distanza_y = target_y - current_y
-        if abs(distanza_y) > 0: # Se non siamo ancora arrivati sulla Y
-            if abs(distanza_y) <= passo:
-                dy = distanza_y # Ultimo passo esatto
-            elif distanza_y > 0:
-                dy = passo      # Vai in basso
-            else:
-                dy = -passo     # Vai in alto
-                
-        # 3. Eseguiamo il movimento!
+    # --- ZONA 4: IL PILOTA (MOVIMENTO FLUIDO) ---
+    def muovi_verso(self, tx, ty):
+        coords = self.canvas.coords("drone")
+        cx, cy = coords[0], coords[1]
+        passo = 5
+        dx = dy = 0
+
+        if abs(tx - cx) > 0:
+            dx = tx - cx if abs(tx - cx) <= passo else (passo if tx > cx else -passo)
+        if abs(ty - cy) > 0:
+            dy = ty - cy if abs(ty - cy) <= passo else (passo if ty > cy else -passo)
+
         if dx != 0 or dy != 0:
-            # Muovi l'immagine sul canvas
             self.canvas.move("drone", dx, dy)
-            
-            # Richiama questa stessa funzione tra 20 millisecondi (60 FPS fluidi!)
-            self.after(20, lambda: self.muovi_verso(target_x, target_y))
+            self.after(20, lambda: self.muovi_verso(tx, ty))
         else:
-            # Se dx e dy sono entrambi 0, significa che siamo arrivati!
-            print(f"🚁 Drone arrivato esattamente a destinazione: ({target_x}, {target_y})!")
+            # Arrivato! Passiamo alla prossima riga del PDDL
+            self.step_corrente += 1
+            self.esegui_prossima_mossa()
+ 
 
+    # --- ZONA 3: IL CERVELLO PDDL (LETTURA DA FILE TXT) ---
+    def avvia_missione(self):
+        """Legge il piano dal file di testo e avvia il drone"""
+        self.btn_start.configure(state="disabled") 
+        
+        with open("piano_istanza1.txt", "r") as file:
+            testo_planner = file.read()
+        
+        self.piano_pddl = self.estrai_piano_universale(testo_planner)
+        self.step_corrente = 0
+        
+        if self.piano_pddl:
+            self.esegui_prossima_mossa()
+        else:
+            print("❌ Il file è stato letto, ma non ho trovato azioni valide.")
+            self.btn_start.configure(state="normal")
+        
+
+    def estrai_piano_universale(self, testo):
+        piano = []
+        for riga in testo.split("\n"):
+            if "(" in riga and ")" in riga:
+                azione = riga[riga.find("(")+1 : riga.find(")")].split()
+                piano.append(azione)
+        return piano
+
+    def esegui_prossima_mossa(self):
+        """Controlla il copione: se ci sono mosse, le lancia"""
+        if self.step_corrente < len(self.piano_pddl):
+            azione = self.piano_pddl[self.step_corrente]
+            
+            if azione[0] == "move":
+                dest = azione[3] 
+                target_x, target_y = self.coordinate_celle[dest]
+                self.muovi_verso(target_x, target_y)
+            else:
+                self.step_corrente += 1
+                self.after(500, self.esegui_prossima_mossa) # Pausa di mezzo secondo
+        else:
+            self.fine = ctk.CTkLabel(self, text="Finito", font=("Segoe UI Variable", 24, "bold"))
+            self.fine.pack(pady=20)
 
 # =========================================================
 #  IL MENU PRINCIPALE (DASHBOARD)
