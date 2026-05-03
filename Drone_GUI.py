@@ -12,7 +12,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
     def __init__(self, master, numero_istanza):
         super().__init__(master)
         self.title(f"Simulazione Istanza {numero_istanza}")
-        self.geometry("1000x1000")
+        self.geometry("1200x1000")
         self.attributes("-topmost", True)
 
         # CONFIGURAZIONE E DATI 
@@ -21,6 +21,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
         elif numero_istanza == 4:
             self.livello_batteria = 0.5  
         self.consumo_per_mossa = 0.05 # Ogni mossa consuma il 5% (0.05)
+        self.num_order = 0
         self.lato_cella = 160
         self.step_corrente = 0
         self.piano_pddl = []
@@ -73,6 +74,10 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.barra_batteria.pack(pady=10)
         self.barra_batteria.set(self.livello_batteria)
 
+        self.counter = ctk.CTkLabel(self, text=f"Ordini in carico: {self.num_order}", font=("Segoe UI Variable", 16))
+        self.counter.place(relx=0.95, rely=0.02, anchor="ne")
+
+       
    
     # --- METODI GRAFICI ---
     def disegna_griglia(self):
@@ -148,7 +153,6 @@ class FinestraSimulazione(ctk.CTkToplevel):
                 target_x, target_y = self.coordinate_celle[dest]
                 self.muovi_verso(target_x, target_y)
             elif azione[0] == "recharge":
-                print("⚡ Ricarica in corso...")
                 
                 # --- RIPRISTINA LA BATTERIA ---
                 self.livello_batteria = 1.0
@@ -160,14 +164,42 @@ class FinestraSimulazione(ctk.CTkToplevel):
                 
                 # Pausa lunga (1.5 secondi) per simulare il tempo di ricarica e poi riparte
                 self.after(1500, self.esegui_prossima_mossa)
+            elif azione[0] == "load-order":
+                self.num_order += 1
+                self.counter.configure(text=f"Ordini in carico: {self.num_order}")
                 
+                # IMPORTANTISSIMO: Passiamo alla mossa successiva!
+                self.step_corrente += 1
+                
+                # Pausa lunga (1.5 secondi) per simulare il tempo di ricarica e poi riparte
+                self.after(700, self.esegui_prossima_mossa)
+            elif azione[0] == "delivery-order":
+                self.num_order -= 1
+                self.counter.configure(text=f"Ordini in carico: {self.num_order}")
+                
+                # IMPORTANTISSIMO: Passiamo alla mossa successiva!
+                self.step_corrente += 1
+                
+                self.after(700, self.esegui_prossima_mossa)
+            
             else:
                 # Per load e delivery passa al comando successivo
                 self.step_corrente += 1
                 self.after(500, self.esegui_prossima_mossa)
         else:
-            self.fine = ctk.CTkLabel(self, text="Ordine è stato consegnato", font=("Segoe UI Variable", 24, "bold"))
-            self.fine.pack(pady=20)
+            
+            self.fine = ctk.CTkLabel(
+                self, 
+                text=" 🎉 Tutti gli ordini consegnati! 🚁 ", 
+                font=("Segoe UI Variable", 28, "bold"),
+                text_color="white",
+                fg_color="#2ecc71",   # Un bel verde acceso
+                corner_radius=15,     # Bordi belli arrotondati
+                width=400,
+                height=60
+            )
+           
+            self.fine.place(relx=0.5, rely=0.5, anchor="center")
 
 # =========================================================
 #  IL MENU PRINCIPALE (DASHBOARD)
