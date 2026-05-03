@@ -41,13 +41,9 @@ class FinestraSimulazione(ctk.CTkToplevel):
         immagine_pil = Image.open("drone.png").resize((100, 100))
         self.immagine_tk = ImageTk.PhotoImage(immagine_pil)
         self.id_drone = self.canvas.create_image(centro, centro, image=self.immagine_tk, tags="drone")
-        self.after(1000, lambda: self.muovi_drone(50, 50))
+        self.after(1000, lambda: self.muovi_verso(720, 400))
       
     
-    def muovi_drone(self, x, y):
-        if x < 360 and y < 360:
-            self.canvas.move("drone", 5, 5)
-            self.after(50, lambda: self.muovi_drone(x + 5, y + 5))
 
     def disegna_griglia(self):
          for i in range(1, 5):
@@ -102,11 +98,60 @@ class FinestraSimulazione(ctk.CTkToplevel):
 
     def leggi_pddl(self):
         print("Qui scriveremo la logica per far muovere il drone!")
-
+   
+    def muovi_verso(self, target_x, target_y):
+        """Muove il drone dal punto in cui si trova verso target_x e target_y"""
+        
+        # 1. Chiediamo al canvas dove si trova il drone IN QUESTO MOMENTO
+        # coords restituisce una lista [x, y] del centro dell'immagine
+        coordinate_attuali = self.canvas.coords("drone")
+        
+        # Controllo di sicurezza (se il drone non c'è, fermati)
+        if not coordinate_attuali:
+            return 
+            
+        current_x = coordinate_attuali[0]
+        current_y = coordinate_attuali[1]
+        
+        # 2. Prepariamo i calcoli per il passo
+        passo = 5 # Quanti pixel si muove per ogni frame (velocità)
+        dx = 0    # Spostamento orizzontale
+        dy = 0    # Spostamento verticale
+        
+        # --- CALCOLO ASSE X ---
+        distanza_x = target_x - current_x
+        if abs(distanza_x) > 0: # Se non siamo ancora arrivati sulla X
+            if abs(distanza_x) <= passo:
+                dx = distanza_x # Ultimo passo esatto per non "sorpassare"
+            elif distanza_x > 0:
+                dx = passo      # Vai a destra
+            else:
+                dx = -passo     # Vai a sinistra
+                
+        # --- CALCOLO ASSE Y ---
+        distanza_y = target_y - current_y
+        if abs(distanza_y) > 0: # Se non siamo ancora arrivati sulla Y
+            if abs(distanza_y) <= passo:
+                dy = distanza_y # Ultimo passo esatto
+            elif distanza_y > 0:
+                dy = passo      # Vai in basso
+            else:
+                dy = -passo     # Vai in alto
+                
+        # 3. Eseguiamo il movimento!
+        if dx != 0 or dy != 0:
+            # Muovi l'immagine sul canvas
+            self.canvas.move("drone", dx, dy)
+            
+            # Richiama questa stessa funzione tra 20 millisecondi (60 FPS fluidi!)
+            self.after(20, lambda: self.muovi_verso(target_x, target_y))
+        else:
+            # Se dx e dy sono entrambi 0, significa che siamo arrivati!
+            print(f"🚁 Drone arrivato esattamente a destinazione: ({target_x}, {target_y})!")
 
 
 # =========================================================
-# CLASSE 1: IL MENU PRINCIPALE (DASHBOARD)
+#  IL MENU PRINCIPALE (DASHBOARD)
 # =========================================================
 class App(ctk.CTk):
     def __init__(self):
