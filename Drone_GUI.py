@@ -16,8 +16,10 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.attributes("-topmost", True)
 
         # CONFIGURAZIONE E DATI 
-        
-        self.livello_batteria = 1.0  # Partiamo dal 100% (1.0)
+        if numero_istanza == 1 or numero_istanza == 2 or numero_istanza == 3:
+           self.livello_batteria = 1.0  # Partiamo dal 100% (1.0)
+        elif numero_istanza == 4:
+            self.livello_batteria = 0.5  
         self.consumo_per_mossa = 0.05 # Ogni mossa consuma il 5% (0.05)
         self.lato_cella = 160
         self.step_corrente = 0
@@ -50,7 +52,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
              img_pil = Image.open("house.png").resize((100, 100))
              self.img_tk_house = ImageTk.PhotoImage(img_pil)
              self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
-        if numero_istanza == 2 or numero_istanza == 3 :
+        if numero_istanza == 2 or numero_istanza == 3 or numero_istanza == 4:
             self.id_house = self.canvas.create_image(80, 720, image=self.img_tk_house, tags="house")
             self.id_house = self.canvas.create_image(720, 80, image=self.img_tk_house, tags="house")
             self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
