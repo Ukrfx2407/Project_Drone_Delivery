@@ -12,14 +12,14 @@ class FinestraSimulazione(ctk.CTkToplevel):
     def __init__(self, master, numero_istanza):
         super().__init__(master)
         self.title(f"Simulazione Istanza {numero_istanza}")
-        self.geometry("1200x1000")
+        self.geometry("1500x1000")
         self.attributes("-topmost", True)
 
         # CONFIGURAZIONE E DATI 
-        if numero_istanza == 1 or numero_istanza == 2 or numero_istanza == 3:
+        if numero_istanza == 1 or numero_istanza == 2 or numero_istanza == 3 or numero_istanza == 4:
            self.livello_batteria = 1.0  # Partiamo dal 100% (1.0)
-        elif numero_istanza == 4:
-            self.livello_batteria = 0.5  
+        elif numero_istanza == 5:
+            self.livello_batteria = 0.4  
         self.consumo_per_mossa = 0.05 # Ogni mossa consuma il 5% (0.05)
         self.num_order = 0
         self.lato_cella = 160
@@ -28,41 +28,68 @@ class FinestraSimulazione(ctk.CTkToplevel):
         
         # Il tuo Dizionario GPS (Coordinate centrali delle celle)
         self.coordinate_celle = {
-            "p00": (80, 80),   "p01": (240, 80),  "p02": (400, 80),  "p03": (560, 80),  "p04": (720, 80),
-            "p10": (80, 240),  "p11": (240, 240), "p12": (400, 240), "p13": (560, 240), "p14": (720, 240),
-            "p20": (80, 400),  "p21": (240, 400), "p22": (400, 400), "p23": (560, 400), "p24": (720, 400),
-            "p30": (80, 560),  "p31": (240, 560), "p32": (400, 560), "p33": (560, 560), "p34": (720, 560),
-            "p40": (80, 720),  "p41": (240, 720), "p42": (400, 720), "p43": (560, 720), "p44": (720, 720)
+            
+            "p00": (80, 80),   "p01": (240, 80),  "p02": (400, 80),  "p03": (560, 80),  "p04": (720, 80),  "p05": (880, 80),  "p06": (1040, 80),
+            "p10": (80, 240),  "p11": (240, 240), "p12": (400, 240), "p13": (560, 240), "p14": (720, 240), "p15": (880, 240), "p16": (1040, 240),
+            "p20": (80, 400),  "p21": (240, 400), "p22": (400, 400), "p23": (560, 400), "p24": (720, 400), "p25": (880, 400), "p26": (1040, 400),
+            "p30": (80, 560),  "p31": (240, 560), "p32": (400, 560), "p33": (560, 560), "p34": (720, 560), "p35": (880, 560), "p36": (1040, 560),
+            "p40": (80, 720),  "p41": (240, 720), "p42": (400, 720), "p43": (560, 720), "p44": (720, 720), "p45": (880, 720), "p46": (1040, 720)
         }
 
         # --- ZONA 2: PREPARAZIONE GRAFICA ---
-        self.canvas = tk.Canvas(self, width=800, height=800, bg="white", highlightthickness=0)
+        self.canvas = tk.Canvas(self, width=1120, height=800, bg= "#3c3c40", highlightthickness=0)
         self.canvas.pack(pady=20)
+
+        img_pil = Image.open("drone.png").resize((100, 100))
+        self.img_tk = ImageTk.PhotoImage(img_pil) 
+
+        img_pil = Image.open("electric-station.png").resize((100, 100))
+        self.img_recharge = ImageTk.PhotoImage(img_pil)
         
         img_pil = Image.open("house.png").resize((100, 100))
         self.img_tk_house = ImageTk.PhotoImage(img_pil)
         
         img_pil = Image.open("restaurant.png").resize((100, 100))
         self.img_tk_restaurant = ImageTk.PhotoImage(img_pil)
-        self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
+
         self.id_restaurant = self.canvas.create_image(80, 80, image=self.img_tk_restaurant, tags="restaurant")
 
+
         self.disegna_griglia()
-        
+        self.disegna_ostacoli(numero_istanza)
+
         if numero_istanza == 1 : 
-             img_pil = Image.open("house.png").resize((100, 100))
-             self.img_tk_house = ImageTk.PhotoImage(img_pil)
-             self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
-        if numero_istanza == 2 or numero_istanza == 3 or numero_istanza == 4:
+             self.id_house = self.canvas.create_image(1040, 720, image=self.img_tk_house, tags="house")
+        elif numero_istanza == 2 or numero_istanza == 3:
             self.id_house = self.canvas.create_image(80, 720, image=self.img_tk_house, tags="house")
-            self.id_house = self.canvas.create_image(720, 80, image=self.img_tk_house, tags="house")
-            self.id_house = self.canvas.create_image(720, 720, image=self.img_tk_house, tags="house")
-        
+            self.id_house = self.canvas.create_image(1040, 80, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(1040, 720, image=self.img_tk_house, tags="house")
+            self.id_recharge = self.canvas.create_image(400, 720, image=self.img_recharge, tags="recharge")
+        elif numero_istanza == 4:
+            self.id_house = self.canvas.create_image(80, 720, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(1040, 80, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(1040, 720, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(560, 560, image=self.img_tk_house, tags="house")
+            self.id_recharge = self.canvas.create_image(400, 720, image=self.img_recharge, tags="recharge")
+        elif numero_istanza == 5:
+            self.id_house = self.canvas.create_image(880, 560, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(80, 720, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(1040, 80, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(1040, 720, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(560, 560, image=self.img_tk_house, tags="house")
+            self.id_house = self.canvas.create_image(720, 240, image=self.img_tk_house, tags="house")
+            self.id_recharge = self.canvas.create_image(400, 720, image=self.img_recharge, tags="recharge")
+            self.id_recharge = self.canvas.create_image(1040, 400, image=self.img_recharge, tags="recharge")
+            self.id_drone2 = self.canvas.create_image(80,80, image=self.img_tk, tags="drone2")
+
         # Carichiamo il drone (assicurati che il file si chiami drone.png)
-        img_pil = Image.open("drone.png").resize((100, 100))
-        self.img_tk = ImageTk.PhotoImage(img_pil)        
+               
         
-        self.id_drone = self.canvas.create_image(80, 80, image=self.img_tk, tags="drone")
+        # Creiamo due droni (taggati separatamente) per supportare più UAV
+        self.id_drone1 = self.canvas.create_image(80, 80, image=self.img_tk, tags="drone1")
+        # Posizioniamo il secondo drone (stesso aspetto) in basso a destra
+        
+        
         
 
         # Bottone per avviare tutto
@@ -81,15 +108,33 @@ class FinestraSimulazione(ctk.CTkToplevel):
    
     # --- METODI GRAFICI ---
     def disegna_griglia(self):
-        for i in range(1, 5):
+        # Disegna 6 linee VERTICALI (per separare 7 colonne)
+        for i in range(1, 7):
             pos = i * self.lato_cella
             self.canvas.create_line(pos, 0, pos, 800, fill="gray", dash=(4, 4))
-            self.canvas.create_line(0, pos, 800, pos, fill="gray", dash=(4, 4))
+            
+        # Disegna 4 linee ORIZZONTALI (per separare 5 righe)
+        for i in range(1, 5):
+            pos = i * self.lato_cella
+            self.canvas.create_line(0, pos, 1120, pos, fill="gray", dash=(4, 4))
 
+    def disegna_ostacoli(self, numero_istanza):
+        # Visualizza le No-Fly Zone per le istanze 4 e 5
+        if numero_istanza >= 4:
+            ostacoli = ["p20", "p21", "p30", "p31"]
+            for o in ostacoli:
+                if o in self.coordinate_celle:
+                    cx, cy = self.coordinate_celle[o]
+                    # Disegna un quadrato centrato sulla cella (lato = 160)
+                    self.canvas.create_rectangle(cx-80, cy-80, cx+80, cy+80, fill="#d31601", outline="#972b0f")
+                    self.canvas.create_text(cx, cy, text="NO-FLY\nZONE", fill="white", font=("Arial", 12, "bold"))
 
     # --- ZONA 4: IL PILOTA (MOVIMENTO FLUIDO) ---
-    def muovi_verso(self, tx, ty):
-        coords = self.canvas.coords("drone")
+    def muovi_verso(self, drone_tag, tx, ty):
+        """Sposta il drone identificato da `drone_tag` verso (tx, ty)."""
+        coords = self.canvas.coords(drone_tag)
+        if not coords:
+            return
         cx, cy = coords[0], coords[1]
         passo = 5
         dx = dy = 0
@@ -100,8 +145,8 @@ class FinestraSimulazione(ctk.CTkToplevel):
             dy = ty - cy if abs(ty - cy) <= passo else (passo if ty > cy else -passo)
 
         if dx != 0 or dy != 0:
-            self.canvas.move("drone", dx, dy)
-            self.after(20, lambda: self.muovi_verso(tx, ty))
+            self.canvas.move(drone_tag, dx, dy)
+            self.after(20, lambda: self.muovi_verso(drone_tag, tx, ty))
         else:
             # Arrivato! Passiamo alla prossima riga del PDDL
             self.step_corrente += 1
@@ -149,9 +194,24 @@ class FinestraSimulazione(ctk.CTkToplevel):
                     self.barra_batteria.configure(progress_color="#e74c3c")
                 
                 # --- MOVIMENTO ---
-                dest = azione[3] 
+                # Formati possibili nel piano: (move d1 to p20) oppure (move to p20)
+                drone_tag = "drone1"
+                if len(azione) >= 4:
+                    possible = azione[1].lower()
+                    if possible in ("d1", "drone1", "drone_1"):
+                        drone_tag = "drone1"
+                        dest = azione[-1]
+                    elif possible in ("d2", "drone2", "drone_2"):
+                        drone_tag = "drone2"
+                        dest = azione[-1]
+                    else:
+                        # Nessun drone specificato, il destino è l'ultimo token
+                        dest = azione[-1]
+                else:
+                    dest = azione[-1]
+
                 target_x, target_y = self.coordinate_celle[dest]
-                self.muovi_verso(target_x, target_y)
+                self.muovi_verso(drone_tag, target_x, target_y)
             elif azione[0] == "recharge":
                 
                 # --- RIPRISTINA LA BATTERIA ---
