@@ -28,6 +28,8 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.label_batteria_drone2 = None
         self.barra_batteria_drone2 = None
         self.label_ordini_drone2 = None
+        self.label_stato = None
+        self._status_reset_job = None
         
         # Setup interfaccia grafica
         self.layout = ctk.CTkFrame(self, fg_color="transparent")
@@ -126,6 +128,18 @@ class FinestraSimulazione(ctk.CTkToplevel):
             self.label_ordini_drone2 = ctk.CTkLabel(self.pannello_destro, text=f"Ordini Drone 2: {self.num_order_drone2}", font=("Segoe UI Variable", 16, "bold"))
             self.label_ordini_drone2.pack(anchor="w", padx=10, pady=(0, 10))
 
+        self.label_stato = ctk.CTkLabel(
+            self.pannello_destro,
+            text="Stato: in attesa",
+            font=("Segoe UI Variable", 16, "bold"),
+            text_color="white",
+            fg_color="#34495e",
+            corner_radius=12,
+            width=260,
+            height=42,
+        )
+        self.label_stato.pack(fill="x", padx=10, pady=(20, 10))
+
        
 
        
@@ -171,6 +185,22 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.label_ordini_drone1.configure(text=f"Ordini Drone 1: {self.num_order_drone1}")
         if self.label_ordini_drone2 is not None:
             self.label_ordini_drone2.configure(text=f"Ordini Drone 2: {self.num_order_drone2}")
+
+    def aggiorna_stato(self, testo, colore="#34495e", durata=1500, auto_reset=True):
+        self.label_stato.configure(text=f"{testo}", fg_color=colore)
+
+        if self._status_reset_job is not None:
+            self.after_cancel(self._status_reset_job)
+            self._status_reset_job = None
+
+        if not auto_reset:
+            return
+
+        def ripristina_stato():
+            self.label_stato.configure(text="Stato: in attesa", fg_color="#34495e")
+            self._status_reset_job = None
+
+        self._status_reset_job = self.after(durata, ripristina_stato)
 
     # Animazione drone
     def muovi_verso(self, drone_tag, tx, ty):
@@ -249,6 +279,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
                         self.barra_batteria_drone1.configure(progress_color="#e74c3c")
 
                 self.log_evento(f"[{drone_tag}] {testo_azione}")
+                self.aggiorna_stato(f"{drone_tag} in movimento", "#2980b9", auto_reset=False)
 
                 target_x, target_y = self.coord_da_nome(dest)
                 self.muovi_verso(drone_tag, target_x, target_y)
@@ -265,6 +296,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
                     self.barra_batteria_drone1.configure(progress_color="#2ecc71")
 
                 self.log_evento(f"[{drone_tag}] {testo_azione} -> batteria ricaricata")
+                self.aggiorna_stato(f"{drone_tag} in ricarica", "#27ae60", 1500)
                 self.step_corrente += 1
                 self.after(1500, self.esegui_prossima_mossa)
                 
@@ -275,9 +307,10 @@ class FinestraSimulazione(ctk.CTkToplevel):
                     self.num_order_drone1 += 1
                 self.aggiorna_ordini()
                 self.log_evento(f"[{drone_tag}] {testo_azione} -> carico ordine")
+                self.aggiorna_stato(f"{drone_tag} carico ordine", "#8e44ad", 1200)
                 
                 self.step_corrente += 1
-                self.after(700, self.esegui_prossima_mossa)
+                self.after(1200, self.esegui_prossima_mossa)
                 
             elif azione[0] == "delivery-order":
                 if drone_tag == "drone2":
@@ -286,9 +319,10 @@ class FinestraSimulazione(ctk.CTkToplevel):
                     self.num_order_drone1 -= 1
                 self.aggiorna_ordini()
                 self.log_evento(f"[{drone_tag}] {testo_azione} -> consegna ordine")
+                self.aggiorna_stato(f"{drone_tag} consegna ordine", "#d35400", 1200)
                 
                 self.step_corrente += 1
-                self.after(700, self.esegui_prossima_mossa)
+                self.after(1200, self.esegui_prossima_mossa)
             
             else:
                 self.log_evento(f"[info] {testo_azione}")
