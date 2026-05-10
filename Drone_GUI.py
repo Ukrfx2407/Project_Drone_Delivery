@@ -50,8 +50,11 @@ class FinestraSimulazione(ctk.CTkToplevel):
         self.canvas.pack()
 
         # Caricamento immagini
-        img_pil = Image.open("drone.png").resize((100, 100))
+        img_pil = Image.open("drone1.png").resize((100, 100))
         self.img_drone = ImageTk.PhotoImage(img_pil) 
+
+        img_pil = Image.open("drone2.png").resize((100, 100))
+        self.img_drone2 = ImageTk.PhotoImage(img_pil) 
 
         img_pil = Image.open("electric-station.png").resize((100, 100))
         self.img_recharge = ImageTk.PhotoImage(img_pil)
@@ -117,7 +120,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
 
         # Posizionamento del drone2(solo se serve) e dei suoi indicatori
         if self.drone2_attivo:
-            self.id_drone2 = self.canvas.create_image(80, 80, image=self.img_drone, tags="drone2")
+            self.id_drone2 = self.canvas.create_image(80, 80, image=self.img_drone2, tags="drone2")
             
             self.label_batteria_drone2 = ctk.CTkLabel(self.pannello_destro, text="Batteria Drone 2", font=("Segoe UI Variable", 16, "bold"))
             self.label_batteria_drone2.pack(anchor="w", padx=10, pady=(25, 5))
