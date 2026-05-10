@@ -6,7 +6,7 @@ L'interfaccia permette di visualizzare in tempo reale l'esecuzione dei piani ott
 ## Come avviare la simulazione
 Non è necessario inserire comandi manuali nel terminale. Scarica il repository (cliccando su *Code* -> *Download ZIP* ed estraendo la cartella) e segui le istruzioni per il tuo sistema operativo:
 
-### 🪟 Per utenti Windows:
+### Per utenti Windows:
 1. Entra nella cartella del progetto.
 2. Fai doppio clic sul file **`AVVIA_SIMULATORE.bat`**.
 3. Il programma installerà automaticamente le librerie necessarie e avvierà l'interfaccia grafica.
