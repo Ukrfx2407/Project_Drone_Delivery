@@ -1,6 +1,11 @@
 import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageTk
+import os
+
+
+cartella_corrente = os.path.dirname(os.path.abspath(__file__))
+os.chdir(cartella_corrente)
 
 # Finestra di simulazione
 class FinestraSimulazione(ctk.CTkToplevel):
@@ -13,7 +18,7 @@ class FinestraSimulazione(ctk.CTkToplevel):
 
         # Configurazione stato iniziale
         if numero_istanza == 5:
-            self.livello_batteria_drone1 = 1.0
+            self.livello_batteria_drone1 = 0.4
             self.livello_batteria_drone2 = 0.4
         else:
             self.livello_batteria_drone1 = 1.0
@@ -260,15 +265,9 @@ class FinestraSimulazione(ctk.CTkToplevel):
             azione = self.piano_pddl[self.step_corrente]
             testo_azione = " ".join(azione)
             drone_tag = "drone2" if "drone2" in azione else "drone1"
-
-            if drone_tag == "drone2" and not self.drone2_attivo:
-                self.log_evento(f"[warning] Azione ignorata: {testo_azione} (Drone 2 non attivo in questa istanza)")
-                self.step_corrente += 1
-                self.after(400, self.esegui_prossima_mossa)
-                return
             
             if azione[0] == "move":
-                dest = azione[-1]
+                dest = azione[-1] #ultima azione in lista
 
                 if drone_tag == "drone2":
                     self.livello_batteria_drone2 -= self.consumo_per_mossa
