@@ -9,4 +9,5 @@ echo "Installazione delle librerie necessarie..."
 pip3 install customtkinter pillow
 echo ""
 echo "Avvio dell'interfaccia grafica in corso..."
+cd Code
 python3 Drone_GUI.py
