@@ -13,7 +13,7 @@ Non è necessario inserire comandi manuali nel terminale. Scarica il repository 
 
 ### Per utenti Mac:
 1. Apri il Terminale del Mac.
-2. Trascina la cartella del progetto appena scaricata dentro la finestra del Terminale (per indicare al Mac il percorso corretto) e premi Invio.
+2. Scrivi cd e successivamente trascina la cartella del progetto appena scaricata dentro la finestra del Terminale (per indicare al Mac il percorso corretto) e premi Invio.
 3. Digita il seguente comando e premi Invio:
    **`sh AVVIA_MAC.command`**
 4. Il programma installerà le dipendenze e si aprirà la simulazione.
